@@ -39,7 +39,10 @@ def find_console(console, timeout=3.0):
 
     deadline = time.time() + timeout
     while time.time() < deadline:
-        sock.sendto(data, ('255.255.255.255', _DISCOVERY_PORT))
+        # I have some problems on my Windows 10 PCs to send a broadcast when I use
+        # '<broadcast>' or '255.255.255.255'. To make it work I use following workaround:
+        # https://stackoverflow.com/a/35613970/2298490
+        sock.sendto(data, ('<broadcast>', _DISCOVERY_PORT))
         sock.settimeout(deadline - time.time())
         try:
             data, addr = sock.recvfrom(65536)
@@ -47,7 +50,7 @@ def find_console(console, timeout=3.0):
             break
 
         code, headers = _parse_http_response(data)
-        if binascii.a2b_hex(headers['host-id']) != console.host_id:
+        if headers['host-id'].lower() != console.host_id.lower():
             continue
         if code == 620:
             status = ConsoleStatus.standby

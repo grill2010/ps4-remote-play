@@ -17,11 +17,13 @@ _RP_CONTROL_PORT = 9295
 
 def _find_console():
     bsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    bsock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    bsock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
     bsock.bind(('', _RP_CONTROL_PORT))
-
-    bsock.sendto(b'SRC2', ('255.255.255.255', _RP_CONTROL_PORT))
-    bsock.settimeout(2.0)
+    # I have some problems on my Windows 10 PCs to send a broadcast when I use
+    # '<broadcast>' or '255.255.255.255'. To make it work I use following workaround:
+    # https://stackoverflow.com/a/35613970/2298490
+    bsock.sendto(b'SRC2', ('<broadcast>', _RP_CONTROL_PORT))
+    bsock.settimeout(5.0)
     try:
         while True:
             data, (ip, port) = bsock.recvfrom(65536)

@@ -5,12 +5,12 @@
 """
 Entry point of the ps4-remote-play program.
 """
-
 import sys
 
 from ps4rp import discovery
 from ps4rp import registry
 from ps4rp import registration
+from ps4rp import connection
 
 from PySide2 import QtWidgets
 
@@ -70,9 +70,7 @@ class MainWindow(QtWidgets.QWidget):
             )
             return
         if status == discovery.ConsoleStatus.ready:
-            QtWidgets.QMessageBox.information(
-                self, 'Console ready!', 'IP: %s' % ip
-            )
+            connection.connect_to_console(ip, console.registration_key, console.rp_key)
         else:
             discovery.wake_up(ip, console)
             QtWidgets.QMessageBox.information(
@@ -88,3 +86,7 @@ def main():
     window.show()
 
     sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    main()
