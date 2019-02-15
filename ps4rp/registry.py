@@ -31,7 +31,7 @@ class PS4Info:
         try:
             return PS4Info(
                 name=data['name'],
-                host_id=binascii.a2b_hex(data['host_id']),
+                host_id=data['host_id'],
                 registration_key=binascii.a2b_hex(data['registration_key']),
                 rp_key=binascii.a2b_hex(data['rp_key']),
             )
