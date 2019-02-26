@@ -74,3 +74,15 @@ class Session:
         self.input_ctr += 1
         aes = AES.new(self.key, AES.MODE_CFB, iv, segment_size=128)
         return aes.decrypt(ciphertext)
+
+    def encrypt_with_ctr(self, plaintext, ctr):
+        self.output_ctr = ctr
+        iv = self._get_iv(self.output_ctr)
+        aes = AES.new(self.key, AES.MODE_CFB, iv, segment_size=128)
+        return aes.encrypt(plaintext)
+
+    def decrypt_with_ctr(self, ciphertext, ctr):
+        self.input_ctr = ctr
+        iv = self._get_iv(self.input_ctr)
+        aes = AES.new(self.key, AES.MODE_CFB, iv, segment_size=128)
+        return aes.decrypt(ciphertext)

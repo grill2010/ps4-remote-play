@@ -8,6 +8,7 @@ a remote play client. WIP - not working at the moment
 import binascii
 import requests
 import base64
+import uuid
 
 
 from ps4rp import crypto
@@ -37,21 +38,33 @@ def connect_to_console(ip, registration_key, rp_key):
 
     encoded = base64.b64decode(rp_nonce)
     sess = crypto.Session.for_control_auth(rp_key, encoded)
-    
+
+    # It is important to reset the iv counter here. For this prototype
+    # I added a new method which takes the counter as a parameter
+
     padded_regist_key = list(registration_key + b'\x00' * 8)
     padded_regist_key = bytes(padded_regist_key)
-    rp_auth = sess.encrypt(padded_regist_key)
+    rp_auth = sess.encrypt_with_ctr(padded_regist_key, 0)
     rp_auth = base64.b64encode(rp_auth)
 
-    # toDo check how rp-id and rp-ostype are generated
-    rp_did = base64.b64encode(binascii.a2b_hex('294d5fa8313229eea86dfbdc7625ed784afea62dc39de6f85be6000000000000'))  # ?
-    """
-    In the Windows Remote Play app it seems that a valid value is Win10.0.0
-    The value is stored in char[16] and the padding to fill the array looks like \0 \0 \0 \t \0 \0 \0
-    After that the first 10 chars will get XORed with some unknown values.
-    I believe the values will then be encrypted and then encoded with base64.
-    """
-    rp_osType = base64.b64encode(binascii.a2b_hex('8fb664fea71d06132821'))  # ?
+    # In regard to the official PS4 Remote Play app on Windows the 'rp-did'
+    # is the MachineGuid which you can find in the registry under
+    # HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography
+    # In fact the real guid value doesn't matter, the only important
+    # thing is to prepend the specific did_prefix to the machine guid
+    # and add the correct padding. Here we are just generating a random uuid
+    random_did = uuid.uuid4().bytes
+    did_prefix = bytes([0x00, 0x18, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x80])
+    rp_did = did_prefix + random_did + b'0000000'
+    rp_did_encrypted = sess.encrypt_with_ctr(rp_did, 1)
+    rp_did_encoded = base64.b64encode(rp_did_encrypted)
+
+    # A correct value for the 'rp-ostype' is Win10.0.0.
+    # Other values may work as well but have not been tested
+    #  I think the padding here is not really needed
+    rp_ostype = b'Win10.0.0\x00'
+    rp_ostype_encrypted = sess.encrypt_with_ctr(rp_ostype, 2)
+    rp_ostype_encoded = base64.b64encode(rp_ostype_encrypted)
 
     ua = {
         'Host': ip + ':' + str(_RP_CONTROL_PORT),
@@ -60,10 +73,10 @@ def connect_to_console(ip, registration_key, rp_key):
         'Content-Length': '0',
         'RP-Auth': rp_auth,
         'RP-Version': '8.0',
-        'RP-Did': rp_did,
+        'RP-Did': rp_did_encoded,
         'RP-ControllerType': '3',
         'RP-ClientType': '11',
-        'RP-OSType': rp_osType,
+        'RP-OSType': rp_ostype_encoded,
         'RP-ConPath': '1'
     }
     
@@ -71,5 +84,7 @@ def connect_to_console(ip, registration_key, rp_key):
         'http://%s:%d/sce/rp/session/ctrl' % (ip, _RP_CONTROL_PORT),
         headers=ua
     )
-    if resp.status_code != 200:  # it always returns 403 here because of unknown values for rp-did and rp-ostype
+    if resp.status_code != 200:
         return None
+    else:
+        test = "connected"
