@@ -39,8 +39,8 @@ def connect_to_console(ip, registration_key, rp_key):
     encoded = base64.b64decode(rp_nonce)
     sess = crypto.Session.for_control_auth(rp_key, encoded)
 
-    # It is important to reset the iv counter here. For this prototype
-    # I added a new method which takes the counter as a parameter
+    # The order for the encryption is important so for better understanding
+    # I added a new method which takes the counter as a parameter.
 
     padded_regist_key = list(registration_key + b'\x00' * 8)
     padded_regist_key = bytes(padded_regist_key)
@@ -61,7 +61,7 @@ def connect_to_console(ip, registration_key, rp_key):
 
     # A correct value for the 'rp-ostype' is Win10.0.0.
     # Other values may work as well but have not been tested
-    #  I think the padding here is not really needed
+    # I think the padding here is not really needed
     rp_ostype = b'Win10.0.0\x00'
     rp_ostype_encrypted = sess.encrypt_with_ctr(rp_ostype, 2)
     rp_ostype_encoded = base64.b64encode(rp_ostype_encrypted)
@@ -87,4 +87,4 @@ def connect_to_console(ip, registration_key, rp_key):
     if resp.status_code != 200:
         return None
     else:
-        test = "connected"
+        test = "connected" # You should be connected now as remote play client but you will get disconnected after some time. ToDo figure out how the rest of the protocol is working
