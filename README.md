@@ -1,3 +1,6 @@
+Please find a more recent version of this prototype here:
+https://github.com/grill2010/RemotePlayPrototype
+
 PS4 Remote Play client (WIP)
 ============================
 
